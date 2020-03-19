@@ -18,6 +18,14 @@ void HeapTest()
 	while (!IsEmpty(H))
 		fprintf(stdout, "%d ", DeleteMin(H));
 	putchar('\n');
+	Destroy(H);
+
+	int numbers[] = {-10, 12, -25, 20, 45, -1, 33, 100, 78, -24, 120, 98, -21};
+	H = BuildHeap(numbers, sizeof(numbers)/sizeof(int));
+	while (!IsEmpty(H))
+		fprintf(stdout, "%d ", DeleteMin(H));
+	putchar('\n');
+	Destroy(H);
 }
 
 int main(void)

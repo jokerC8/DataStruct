@@ -11,5 +11,6 @@ int Insert(int x, PriorityQueue H);
 int DeleteMin(PriorityQueue H);
 int IsFull(PriorityQueue H);
 int IsEmpty(PriorityQueue H);
+void Destroy(PriorityQueue H);
 
 #endif

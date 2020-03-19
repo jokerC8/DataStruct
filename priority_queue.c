@@ -30,6 +30,22 @@ PriorityQueue Initialize(int Capacity)
 	return H;
 }
 
+void Up(int index, PriorityQueue H)
+{
+	int Parent, Temp;
+
+	for (; index/2 > 0; index = Parent) {
+		Parent = index >> 1;
+		if (H->Heap[index] < H->Heap[Parent]) {
+			Temp = H->Heap[index];
+			H->Heap[index] = H->Heap[Parent];
+			H->Heap[Parent] = Temp;
+		} else {
+			break;
+		}
+	}
+}
+
 void Down(int index, PriorityQueue H)
 {
 	int Child, Temp;
@@ -133,4 +149,12 @@ int IsEmpty(PriorityQueue H)
 		return H->Size == 0;
 
 	return 0;
+}
+
+void Destroy(PriorityQueue H)
+{
+	if (H) {
+		free(H->Heap);
+		free(H);
+	}
 }
