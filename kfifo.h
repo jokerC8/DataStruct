@@ -22,7 +22,8 @@ static inline unsigned int roundup_pow_of_two(unsigned int size)
 {
 	unsigned int n = 1UL;
 
-	if (1 == size) return size;
+	if (1 == size)
+		return size;
 	while (n < size) {
 		n <<= 1;
 	}
