@@ -7,7 +7,8 @@ typedef struct GraphStruct *Graph;
 Graph InitGraph(int Size);
 void PrintGraph(Graph G);
 void DestroyGraph(Graph G);
-void WeightedPathLength(Graph G);
+void WeightedPathLength(int StartVertex, Graph G);
+void UnWeightedPathLength(int StartVertex, Graph G);
 void AddEdg(int Src, int Dest, int weight, int Directed, Graph G);
 
 #endif

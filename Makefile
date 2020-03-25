@@ -36,7 +36,7 @@ priority_queue:priority_queue.o priority_queue_test.o
 %.o:%.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-graph:graph.o graph_test.o
+graph:graph.o graph_test.o queue.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o:%.c

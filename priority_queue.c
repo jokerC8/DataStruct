@@ -17,15 +17,15 @@ PriorityQueue Initialize(int Capacity)
 	PriorityQueue H;
 
 	if (Capacity < MIN)
-		error(-1, -1, "Capacity must largger than %d\n", MIN);
+		error(-1, 0, "Capacity must largger than %d\n", MIN);
 	H = malloc(sizeof(*H));
 	if (!H)
-		error(-1, -1, "malloc failed\n");
+		error(-1, 0, "malloc failed\n");
 	H->Size = 0;
 	H->Capacity = Capacity;
 	H->Heap = malloc(sizeof(int) * (Capacity + 1));
 	if (!H->Heap)
-		error(-1, -1, "malloc failed\n");
+		error(-1, 0, "malloc failed\n");
 	H->Heap[0] = -1;
 	return H;
 }
@@ -71,13 +71,13 @@ PriorityQueue BuildHeap(int *arr, int size)
 
 	H = malloc(sizeof(*H));
 	if (!H)
-		error(-1, -1, "malloc failed\n");
+		error(-1, 0, "malloc failed\n");
 	if (size < MIN)
 		size = MIN;
 
 	H->Heap = malloc(sizeof(int) * (2 * size + 1));
 	if (!H->Heap)
-		error(-1, -1, "malloc failed\n");
+		error(-1, 0, "malloc failed\n");
 
 	H->Heap[0] = -1;
 	memcpy(H->Heap + 1, arr, sizeof(int) * size);
@@ -100,7 +100,7 @@ int Insert(int x, PriorityQueue H)
 	int i;
 
 	if (IsFull(H)) {
-		error(0, -1, "PriorityQueue is full\n");
+		error(0, 0, "PriorityQueue is full\n");
 		return -1;
 	}
 	for (i = ++H->Size;	(i > 1) && H->Heap[i/2] > x; i /= 2)
@@ -115,7 +115,7 @@ int DeleteMin(PriorityQueue H)
 	int i, index, last, min;
 
 	if (!H || IsEmpty(H)) {
-		error(0, -1, "PriorityQueue is NULL or empty\n");
+		error(0, 0, "PriorityQueue is NULL or empty\n");
 		return -1;
 	}
 	min = H->Heap[1];
