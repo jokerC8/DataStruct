@@ -1,4 +1,4 @@
-all: list hlist tree avltree priority_queue graph queue stack
+all: list hlist tree avltree priority_queue graph queue stack rbtree
 
 CFLAGS += -g -Wall -Werror -fPIC
 
@@ -54,7 +54,12 @@ stack:stack.o stack_test.o
 %.o:%.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-.PYTHON:clean list hlist all tree avltree priority_queue graph queue stack
+rbtree:rbtree.o rbtree_test.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+%.o:%.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+.PYTHON:clean list hlist all tree avltree priority_queue graph queue stack rbtree
 
 clean:
-	@rm -rf list hlist tree avltree priority_queue graph queue stack *.o
+	@rm -rf list hlist tree avltree priority_queue graph queue stack rbtree *.o
