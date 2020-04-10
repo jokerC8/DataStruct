@@ -191,8 +191,8 @@ int Retrive(Position P)
 void PrintTree(AVLTree T)
 {
 	if (T) {
-		fprintf(stdout, "Element=%d Height=%d\n", T->Element, T->Height);
 		PrintTree(T->Left);
+		fprintf(stdout, "\tElement=%d Height=%d\n", T->Element, T->Height);
 		PrintTree(T->Right);
 	}
 }

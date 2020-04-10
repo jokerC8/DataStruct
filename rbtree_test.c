@@ -3,13 +3,23 @@
 
 void test()
 {
-	int c;
-	RBTree T = NULL;
+	int c, i;
+	RBTree T = 0; 
+	int nums[] = {
+		7, 19, 81, 6, 10, 100, 20, 129, 145, 89, 76, 129, 234, 65, 22, 43, 1024, 782, 1231, 321
+	};
+	for (i = 0; (unsigned int)i < sizeof(nums)/sizeof(int); i++) {
+		fprintf(stdout, "Insert:%d\n", nums[i]);
+		T = Insert(nums[i], T);
+		InOrder(T);
+	}
 
-	for (; ;) {
-		fprintf(stdout, "Please input a num:");
+	while (1) {
+		fprintf(stdout, "Delete a num:");
 		scanf("%d", &c);
-		T = Insert(c, T);
+		if (T == NULL)
+			break;
+		Delete(c, &T);
 		InOrder(T);
 	}
 }
