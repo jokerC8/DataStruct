@@ -13,5 +13,6 @@ RBTree Insert(ElementType x, RBTree T);
 void Delete(ElementType x, RBTree *T);
 ElementType Retrive(Position P);
 void InOrder(RBTree T);
+RBTree BuildTreeForTest(ElementType x, int c, RBTree T);
 
 #endif

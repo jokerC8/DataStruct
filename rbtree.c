@@ -4,12 +4,10 @@
 
 #include "rbtree.h"
 
-#define Logd(format, args...) fprintf(stdout, "[%s:%d]\n"format, __FUNCTION__,__LINE__,##args);
-
 typedef enum {RED, BLACK} NodeColor;
 
 struct RBTreeNode {
-	NodeColor Color;	
+	NodeColor Color;
 	ElementType Element;
 	RBTree Left, Right, Parent;
 };
@@ -130,7 +128,7 @@ static void Rebalance(Position Node, RBTree *T)
 {
 	Position P, G, U;
 
-	while (Node != *T && Node->Parent && Node->Parent->Color == RED && Node->Color == RED) {
+	while (Node != *T && Node->Parent->Color == RED && Node->Color == RED) {
 
 		P = Node->Parent;
 		G = P->Parent;
@@ -147,7 +145,7 @@ static void Rebalance(Position Node, RBTree *T)
 		if (P == G->Left) {
 			/* LR case */
 			if (Node == P->Right) {
-				LeftRotate(P, T);	
+				LeftRotate(P, T);
 				P = Node;
 			}
 			RightRotate(G, T);
@@ -178,8 +176,12 @@ RBTree Insert(ElementType X, RBTree T)
 	if (!P)
 		error(-1, 0, "no memory\n");
 
-	T = __BSTInsert(P, T);
-	Rebalance(P, &T);
+	if (!Find(X, T)) {
+		T = __BSTInsert(P, T);
+		Rebalance(P, &T);
+	}
+	else
+		free(P);
 
 	return T;
 }
@@ -267,7 +269,7 @@ void SwapColor(Position P1, Position P2)
  */
 void FixDoubleBlack(Position Node, RBTree *T)
 {
-	Position P, S, SL, SR, L, R;
+	Position P, S, SL, SR;
 
 	if (!Node->Parent)
 		return;
@@ -276,52 +278,72 @@ void FixDoubleBlack(Position Node, RBTree *T)
 	S = OnLeft(Node)? P->Right : P->Left;
 	SL = S->Left;
 	SR = S->Right;
-	L = Node->Left;
-	R = Node->Right;
 
 	if (S->Color == RED) {
+		fprintf(stdout, "FixDoubleBlack Sibling is RED\n");
 		if (OnLeft(Node)) {
-			SL->Color = RED;
-			S->Color = BLACK;
 			LeftRotate(P, T);
-			if (!L) {
-				P->Left = R;
-				if (R) R->Parent = P;
+			if (HaveRedChild(SL)) {
+				if (SL->Right) {
+					LeftRotate(P, T);
+					if (SL->Left && SL->Right) {
+						S->Color = BLACK;
+						SL->Color = RED;
+						SL->Right->Color = BLACK;
+					} else {
+						S->Color = BLACK;
+						P->Color = RED;
+					}
+				} else {
+					RightRotate(SL, T);
+					LeftRotate(P, T);
+					S->Color = BLACK;
+					P->Color = RED;
+					SL->Color = RED;
+					SL->Parent->Color = BLACK;
+				}
 			} else {
-				P->Left = L;
-				L->Parent = P;
+				S->Color = BLACK;
+				SL->Color = RED;
 			}
 		} else {
-			SR->Color = RED;
-			S->Color = BLACK;
 			RightRotate(P, T);
-			if (!R) {
-				P->Right = L;
-				if (L) L->Parent = P;
+			if (HaveRedChild(SR)) {
+				if (SR->Left) {
+					RightRotate(P, T);
+					if (SR->Left && SR->Right) {
+						S->Color = BLACK;
+						SR->Color = RED;
+						SR->Left->Color = BLACK;
+					} else {
+						S->Color = BLACK;
+						P->Color = RED;
+					}
+				} else {
+					LeftRotate(SR, T);
+					RightRotate(P, T);
+					S->Color = BLACK;
+					P->Color = RED;
+					SR->Color = RED;
+					SR->Parent->Color = BLACK;
+				}
 			} else {
-				P->Right = R;
-				R->Parent = P;
+				S->Color = BLACK;
+				SR->Color = RED;
 			}
 		}
-		free(Node);
 	} else if (HaveRedChild(S)) {
+		fprintf(stdout, "FixDoubleBlack Sibling is BLACK and have a red child\n");
 		if (OnLeft(Node)) {
 			if (SR) {
 				SwapColor(P, S);
 				SR->Color = BLACK;
 				LeftRotate(P, T);
 			} else {
-				RightRotate(S, T);
-				LeftRotate(P, T);
 				SL->Color = P->Color;
 				P->Color = BLACK;
-			}
-			if (!L) {
-				P->Left = R;
-				if (R) R->Parent = P;
-			} else {
-				P->Left = L;
-				L->Parent = P;
+				RightRotate(S, T);
+				LeftRotate(P, T);
 			}
 		} else {
 			if (SL) {
@@ -329,64 +351,21 @@ void FixDoubleBlack(Position Node, RBTree *T)
 				SL->Color = BLACK;
 				RightRotate(P, T);
 			} else {
-				LeftRotate(S, T);
-				RightRotate(P, T);
 				SR->Color = P->Color;
 				P->Color = BLACK;
-			}
-			if (!R) {
-				P->Right = L;
-				if (L) L->Parent = P;
-			} else {
-				P->Right = R;
-				R->Parent = P;
+				LeftRotate(S, T);
+				RightRotate(P, T);
 			}
 		}
-		free(Node);
 	} else {
+		fprintf(stdout, "FixDoubleBlack Sibling is BLACK and all child is black\n");
 		/* u,v,s black */
 		if (P->Color == RED) {
 			P->Color = BLACK;
 			S->Color = RED;
-			if (OnLeft(Node)) {
-				if (!L) {
-					P->Left = R;
-					if (R) R->Parent = P;
-				} else {
-					P->Left = L;
-					L->Parent = P;
-				}
-			} else {
-				if (!R) {
-					P->Right = L;
-					if (L) L->Parent = P;
-				} else {
-					P->Right = R;
-					R->Parent = P;
-				}
-			}
-			free(Node);
 		} else {
 			S->Color = RED;
 			FixDoubleBlack(P, T);
-			if (OnLeft(Node)) {
-				if (!L) {
-					P->Left = R;
-					if (R) R->Parent = P;
-				} else {
-					P->Left = L;
-					L->Parent = P;
-				}
-			} else {
-				if (!R) {
-					P->Right = L;
-					if (L) L->Parent = P;
-				} else {
-					P->Right = R;
-					R->Parent = P;
-				}
-			}
-			free(Node);
 		}
 	}
 }
@@ -401,12 +380,15 @@ void Delete(ElementType x, RBTree *T)
 		return;
 	/* if Node is red, it must be leaf, and must have a black parent */
 	if (Node->Color == RED) {
+		fprintf(stdout, "Node is leaf, and is red\n");
 		if (OnLeft(Node))
 			Node->Parent->Left = NULL;
 		else
 			Node->Parent->Right = NULL;
+
 		free(Node);
 	} else if (HaveRedChild(Node)) {
+		fprintf(stdout, "Node have red child\n");
 		/* remember that Node only have one child */
 		L = Node->Left;
 		R = Node->Right;
@@ -414,12 +396,11 @@ void Delete(ElementType x, RBTree *T)
 		 * Node is root, so no need set its color here, we
 		 * will set its color at the end of function
 		 */
-		if (Node == *T) {
+		if (!Node->Parent) {
 			if (L) {
 				L->Parent = NULL;
 				*T = L;
-			}
-			else {
+			} else {
 				R->Parent = NULL;
 				*T = R;
 			}
@@ -447,12 +428,31 @@ void Delete(ElementType x, RBTree *T)
 		/* free deleted node */
 		free(Node);
 	} else {
-		if (Node == *T) {
-			*T = NULL;
-			free(Node);
-			return;
-		}
 		FixDoubleBlack(Node, T);
+		if (!Node->Parent) {
+			*T = NULL;
+		} else {
+			L = Node->Left;
+			R = Node->Right;
+			if (OnLeft(Node)) {
+				if (!L) {
+					Node->Parent->Left = R;
+					if (R) R->Parent = Node->Parent;
+				} else {
+					Node->Parent->Left = L;
+					L->Parent = Node->Parent;
+				}
+			} else {
+				if (!R) {
+					Node->Parent->Right = L;
+					if (L) L->Parent = Node->Parent;
+				} else {
+					Node->Parent->Right = R;
+					R->Parent = Node->Parent;
+				}
+			}
+		}
+//		free(Node);
 	}
 
 	if (*T)
@@ -478,4 +478,26 @@ void InOrder(RBTree T)
 			fprintf(stdout, "\tParent->Element:%d Parent->Color:%s\n", T->Parent->Element, T->Parent->Color ? "BLACK" : "RED");
 		InOrder(T->Right);
 	}
+}
+
+RBTree BuildTreeForTest(ElementType x, int c, RBTree T)
+{
+	if (!T) {
+		T = malloc(sizeof(*T));
+		if (!T) return NULL;
+		T->Color = c;
+		T->Element = x;
+		T->Left = T->Right = T->Parent = 0;
+	} else {
+		if (x < T->Element) {
+			T->Left = BuildTreeForTest(x, c, T->Left);
+			T->Left->Parent = T;
+		}
+		else if (x > T->Element) {
+			T->Right = BuildTreeForTest(x, c, T->Right);
+			T->Right->Parent = T;
+		}
+	}
+
+	return T;
 }
