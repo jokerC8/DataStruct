@@ -1,503 +1,334 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <error.h>
-
 #include "rbtree.h"
 
-typedef enum {RED, BLACK} NodeColor;
+#define rbtree_red(node) ((node)->color = 1)
+#define rbtree_black(node) ((node)->color = 0)
+#define rbtree_is_red(node) ((node)->color)
+#define rbtree_is_black(node) (!rbtree_is_red(node))
 
-struct RBTreeNode {
-	NodeColor Color;
-	ElementType Element;
-	RBTree Left, Right, Parent;
-};
-
-Position Find(ElementType x, RBTree T)
+rbtree rbtree_min(rbtree node, rbtree sentinel)
 {
-	if (T) {
-		if (x < T->Element)
-			return Find(x, T->Left);
-		else if (x > T->Element)
-			return Find(x, T->Right);
-		else
-			return T;
+	while (node->left != sentinel) {
+		node = node->left;
 	}
 
-	return NULL;
+	return node;
 }
 
-Position FindMin(RBTree T)
+rbtree rbtree_max(rbtree node, rbtree sentinel)
 {
-#if defined(RECURSIVE)
-	if (T && T->Left)
-		return FindMin(T->Left);
-
-	return T;
-#else
-	while (T && T->Left)
-		T = T->Left;
-
-	return T;
-#endif
-}
-
-Position FindMax(RBTree T)
-{
-#if defined(RECURSIVE)
-	if (T && T->Right)
-		return FindMin(T->Right);
-
-	return T;
-#else
-	while (T && T->Right)
-		T = T->Right;
-
-	return T;
-#endif
-}
-
-static Position NewNode(ElementType X)
-{
-	Position P;
-
-	P = malloc(sizeof(*P));
-	if (P) {
-		P->Color = RED;
-		P->Element = X;
-		P->Left = P->Right = P->Parent = NULL;
+	while (node->right != sentinel) {
+		node = node->right;
 	}
 
-	return P;
+	return node;
 }
 
-RBTree __BSTInsert(Position P, RBTree T)
+rbtree rbtree_find(rbtree root, rbtree sentinel, element_type x)
 {
-	if (!T)
-		return P;
-	if (P->Element < T->Element) {
-		T->Left = __BSTInsert(P, T->Left);
-		T->Left->Parent = T;
-	} else if (P->Element > T->Element) {
-		T->Right = __BSTInsert(P, T->Right);
-		T->Right->Parent = T;
-	}
-	/* no thing if P alreay in tree */
-
-	return T;
-}
-
-void LeftRotate(Position Node, RBTree *Root)
-{
-	Position R;
-
-	R = Node->Right;
-	Node->Right = R->Left;
-	if (Node->Right)
-		Node->Right->Parent = Node;
-	R->Parent = Node->Parent;
-	if (!Node->Parent)
-		*Root = R;
-	else if (Node == Node->Parent->Left)
-		Node->Parent->Left = R;
-	else
-		Node->Parent->Right = R;
-	Node->Parent = R;
-	R->Left = Node;
-}
-
-void RightRotate(Position Node, RBTree *Root)
-{
-	Position L;
-
-	L = Node->Left;
-	Node->Left = L->Right;
-	if (Node->Left)
-		Node->Left->Parent = Node;
-	L->Parent = Node->Parent;
-	if (!Node->Parent)
-		*Root = L;
-	else if (Node == Node->Parent->Left)
-		Node->Parent->Left = L;
-	else
-		Node->Parent->Right = L;
-	Node->Parent = L;
-	L->Right = Node;
-}
-
-static void Rebalance(Position Node, RBTree *T)
-{
-	Position P, G, U;
-
-	while (Node != *T && Node->Parent->Color == RED && Node->Color == RED) {
-
-		P = Node->Parent;
-		G = P->Parent;
-		/* find uncle */
-		U = (P == G->Left) ? G->Right : G->Left;
-		/* uncle is red, recolor */
-		if (U && U->Color == RED) {
-			P->Color = BLACK;
-			U->Color = BLACK;
-			G->Color = RED;
-			Node = G;
-			continue;
-		}
-		if (P == G->Left) {
-			/* LR case */
-			if (Node == P->Right) {
-				LeftRotate(P, T);
-				P = Node;
-			}
-			RightRotate(G, T);
-			P->Color = BLACK;
-			G->Color = RED;
-			/* LL case */
-		} else {
-			/* RL case */
-			if (Node == P->Left) {
-				RightRotate(P, T);
-				P = Node;
-			}
-			LeftRotate(G, T);
-			P->Color = BLACK;
-			G->Color = RED;
-			/* RR case */
-		}
-	}
-
-	(*T)->Color = BLACK;
-}
-
-RBTree Insert(ElementType X, RBTree T)
-{
-	Position P;
-
-	P = NewNode(X);
-	if (!P)
-		error(-1, 0, "no memory\n");
-
-	if (!Find(X, T)) {
-		T = __BSTInsert(P, T);
-		Rebalance(P, &T);
-	}
-	else
-		free(P);
-
-	return T;
-}
-
-/*
- * find the Node we want to delete, if Node is leaf or
- * have only one child, then return Node, or find minimal
- * Node on its right tree
- */
-RBTree Successor(ElementType x, RBTree T)
-{
-	Position TmpCell;
-
-	while (T) {
-		if (x < T->Element)
-			T = T->Left;
-		else if (x > T->Element)
-			T = T->Right;
+	while (root != sentinel) {
+		if (x < root->element)
+			root = root->left;
+		else if (x > root->element)
+			root = root->right;
 		else
 			break;
 	}
-	if (T) {
-		TmpCell = T;
-		if (T->Left && T->Right) {
-			TmpCell = FindMin(T->Right);
-			T->Element = TmpCell->Element;
-		}
-		return TmpCell;
-	}
 
-	return NULL;
+	return root;
 }
 
-int OnLeft(Position Node)
+void rbtree_left_rotate(rbtree *root, rbtree sentinel, rbtree node)
 {
-	Position P;
+	rbtree rchild;
 
-	if (Node) {
-		P = Node->Parent;
-		return (P && (P->Left == Node));
+	rchild = node->right;
+	node->right = rchild->left;
+
+	if (rchild->left != sentinel) {
+		rchild->left->parent = node;
 	}
 
-	return 0;
+	rchild->parent = node->parent;
+
+	if (node == *root)
+		*root = rchild;
+
+	else if (node->parent->left == node)
+		node->parent->left = rchild;
+	else
+		node->parent->right = rchild;
+
+	rchild->left = node;
+
+	node->parent = rchild;
 }
 
-int OnRight(Position Node)
+void rbtree_right_rotate(rbtree *root, rbtree sentinel, rbtree node)
 {
-	Position P;
+	rbtree lchild;
 
-	if (Node) {
-		P = Node->Parent;
-		return (P && (P->Right == Node));
-	}
+	lchild = node->left;
+	node->left = lchild->right;
 
-	return 0;
+	if (lchild->right != sentinel)
+		lchild->right->parent = node;
+
+	lchild->parent = node->parent;
+
+	if (node == *root)
+		*root = lchild;
+
+	else if (node->parent->left == node)
+		node->parent->left = lchild;
+	else
+		node->parent->right = lchild;
+
+	lchild->right = node;
+
+	node->parent = lchild;
 }
 
-int HaveRedChild(Position Node)
+void rbtree_insert(rbtree *root, rbtree sentinel, rbtree node)
 {
-	Position L, R;
+	rbtree temp;
 
-	if (Node) {
-		L = Node->Left;
-		R = Node->Right;
-		return ((L && L->Color == RED) || (R && R->Color == RED));
-	}
-
-	return 0;
-}
-
-void SwapColor(Position P1, Position P2)
-{
-	NodeColor TmpColor;
-
-	if (P1 && P2) {
-		TmpColor = P1->Color;
-		P1->Color = P2->Color;
-		P2->Color = TmpColor;
-	}
-}
-
-/*
- * According to the definition of red black tree, if
- * node's color is black, then its sibling must be exist.
- */
-void FixDoubleBlack(Position Node, RBTree *T)
-{
-	Position P, S, SL, SR;
-
-	if (!Node->Parent)
+	if (*root == sentinel) {
+		node->parent = NULL;
+		node->left = sentinel;
+		node->right = sentinel;
+		rbtree_black(node);
+		*root = node;
 		return;
+	}
 
-	P = Node->Parent;
-	S = OnLeft(Node)? P->Right : P->Left;
-	SL = S->Left;
-	SR = S->Right;
+	temp = *root;
 
-	if (S->Color == RED) {
-		fprintf(stdout, "FixDoubleBlack Sibling is RED\n");
-		if (OnLeft(Node)) {
-			LeftRotate(P, T);
-			if (HaveRedChild(SL)) {
-				if (SL->Right) {
-					LeftRotate(P, T);
-					if (SL->Left && SL->Right) {
-						S->Color = BLACK;
-						SL->Color = RED;
-						SL->Right->Color = BLACK;
-					} else {
-						S->Color = BLACK;
-						P->Color = RED;
-					}
-				} else {
-					RightRotate(SL, T);
-					LeftRotate(P, T);
-					S->Color = BLACK;
-					P->Color = RED;
-					SL->Color = RED;
-					SL->Parent->Color = BLACK;
-				}
-			} else {
-				S->Color = BLACK;
-				SL->Color = RED;
+	for (; ;) {
+
+		if (node->element < temp->element) {
+			if (temp->left == sentinel) {
+				temp->left = node;
+				break;
 			}
-		} else {
-			RightRotate(P, T);
-			if (HaveRedChild(SR)) {
-				if (SR->Left) {
-					RightRotate(P, T);
-					if (SR->Left && SR->Right) {
-						S->Color = BLACK;
-						SR->Color = RED;
-						SR->Left->Color = BLACK;
-					} else {
-						S->Color = BLACK;
-						P->Color = RED;
-					}
-				} else {
-					LeftRotate(SR, T);
-					RightRotate(P, T);
-					S->Color = BLACK;
-					P->Color = RED;
-					SR->Color = RED;
-					SR->Parent->Color = BLACK;
-				}
-			} else {
-				S->Color = BLACK;
-				SR->Color = RED;
-			}
+
+			temp = temp->left;
+			continue;
 		}
-	} else if (HaveRedChild(S)) {
-		fprintf(stdout, "FixDoubleBlack Sibling is BLACK and have a red child\n");
-		if (OnLeft(Node)) {
-			if (SR) {
-				SwapColor(P, S);
-				SR->Color = BLACK;
-				LeftRotate(P, T);
-			} else {
-				SL->Color = P->Color;
-				P->Color = BLACK;
-				RightRotate(S, T);
-				LeftRotate(P, T);
+
+		if (node->element >= temp->element) {
+			if (temp->right == sentinel) {
+				temp->right = node;
+				break;
 			}
-		} else {
-			if (SL) {
-				SwapColor(P, S);
-				SL->Color = BLACK;
-				RightRotate(P, T);
-			} else {
-				SR->Color = P->Color;
-				P->Color = BLACK;
-				LeftRotate(S, T);
-				RightRotate(P, T);
-			}
-		}
-	} else {
-		fprintf(stdout, "FixDoubleBlack Sibling is BLACK and all child is black\n");
-		/* u,v,s black */
-		if (P->Color == RED) {
-			P->Color = BLACK;
-			S->Color = RED;
-		} else {
-			S->Color = RED;
-			FixDoubleBlack(P, T);
+
+			temp = temp->right;
+			continue;
 		}
 	}
+
+	node->parent = temp;
+	node->left = sentinel;
+	node->right = sentinel;
+
+	rbtree_red(node);
+
+	/* reblance tree */
+
+	while (node != *root && rbtree_is_red(node->parent)) {
+
+		if (node->parent == node->parent->parent->left) {
+			temp = node->parent->parent->right;
+
+			if (rbtree_is_red(temp)) {
+				rbtree_black(temp);
+				rbtree_black(node->parent);
+				rbtree_red(node->parent->parent);
+				node = node->parent->parent;
+
+			} else {
+				if (node->parent->right == node) {
+					node = node->parent;
+					rbtree_left_rotate(root, sentinel, node);
+				}
+
+				rbtree_black(node->parent);
+				rbtree_red(node->parent->parent);
+				rbtree_right_rotate(root, sentinel, node->parent->parent);
+			}
+
+		} else {
+			temp = node->parent->parent->left;
+
+			if (rbtree_is_red(temp)) {
+				rbtree_black(node->parent);
+				rbtree_black(temp);
+				rbtree_red(node->parent->parent);
+				node = node->parent->parent;
+
+			} else {
+				if (node->parent->left == node) {
+					node = node->parent;
+					rbtree_right_rotate(root, sentinel, node);
+				}
+
+				rbtree_black(node->parent);
+				rbtree_red(node->parent->parent);
+				rbtree_left_rotate(root, sentinel, node->parent->parent);
+			}
+		}
+	}
+
+	rbtree_black(*root);
 }
 
-void Delete(ElementType x, RBTree *T)
+void rbtree_delete(rbtree *root, rbtree sentinel, rbtree node)
 {
-	Position Node, L, R;
+	int is_red;
+	rbtree subst, temp, sbl;
 
-	Node = Successor(x, *T);
-	/* x not exist */
-	if (!Node)
+	if (node->left == sentinel) {
+		subst = node;
+		temp = node->right;
+
+	} else if (node->right == sentinel) {
+		subst = node;
+		temp = node->left;
+
+	} else {
+		subst = rbtree_min(node->right, sentinel);
+		if (subst->left != sentinel) {
+			temp = subst->left;
+		} else {
+			temp = subst->right;
+		}
+	}
+
+	if (subst == *root) {
+		*root = subst;
+		rbtree_black(*root);
 		return;
-	/* if Node is red, it must be leaf, and must have a black parent */
-	if (Node->Color == RED) {
-		fprintf(stdout, "Node is leaf, and is red\n");
-		if (OnLeft(Node))
-			Node->Parent->Left = NULL;
-		else
-			Node->Parent->Right = NULL;
+	}
 
-		free(Node);
-	} else if (HaveRedChild(Node)) {
-		fprintf(stdout, "Node have red child\n");
-		/* remember that Node only have one child */
-		L = Node->Left;
-		R = Node->Right;
-		/*
-		 * Node is root, so no need set its color here, we
-		 * will set its color at the end of function
-		 */
-		if (!Node->Parent) {
-			if (L) {
-				L->Parent = NULL;
-				*T = L;
-			} else {
-				R->Parent = NULL;
-				*T = R;
+	is_red = subst->color;
+
+	if (subst == subst->parent->left) {
+		subst->parent->left = temp;
+
+	} else {
+		subst->parent->right = temp;
+	}
+
+	if (subst == node) {
+		temp->parent = subst->parent;
+
+	} else {
+		if (subst->parent == node) {
+			temp->parent = subst;
+
+		} else {
+			temp->parent = subst->parent;
+		}
+
+		subst->left = node->left;
+		subst->right = node->right;
+		subst->parent = node->parent;
+		subst->color = node->color;
+
+		if (node == *root) {
+			*root = subst;
+
+		} else if (node == node->parent->left) {
+			node->parent->left = subst;
+
+		} else {
+			node->parent->right = subst;
+		}
+
+		if (subst->left != sentinel) {
+			subst->left->parent = subst;
+		}
+
+		if (subst->right != sentinel) {
+			subst->right->parent = subst;
+		}
+	}
+
+	if (is_red) {
+		return;
+	}
+
+	/* reblance tree */
+
+	while (temp != *root && rbtree_black(temp)) {
+		if (temp == temp->parent->left) {
+			sbl = temp->parent->right;
+
+			if (rbtree_is_red(sbl)) {
+				rbtree_black(sbl);
+				rbtree_red(temp->parent);
+				rbtree_left_rotate(root, sentinel, temp->parent);
+				sbl = temp->parent->right;
 			}
-		} else if (OnLeft(Node)) {
-			if (L) {
-				L->Color = BLACK;
-				Node->Parent->Left = L;
-				L->Parent = Node->Parent;
+
+			if (rbtree_is_black(sbl->left) && rbtree_is_black(sbl->right)) {
+				rbtree_red(sbl);
+				temp = temp->parent;
+
 			} else {
-				R->Color = BLACK;
-				Node->Parent->Left = R;
-				R->Parent = Node->Parent;
+				if (rbtree_is_black(sbl->right)) {
+					rbtree_black(sbl->left);
+					rbtree_red(sbl);
+					rbtree_right_rotate(root, sentinel, sbl);
+					sbl = temp->parent->right;
+				}
+
+				sbl->color = temp->parent->color;
+				rbtree_black(temp->parent);
+				rbtree_black(sbl->right);
+				rbtree_left_rotate(root, sentinel, temp->parent);
+				temp = *root;
 			}
 		} else {
-			if (L) {
-				L->Color = BLACK;
-				Node->Parent->Right = L;
-				L->Parent = Node->Parent;
+			sbl = temp->parent->left;
+
+			if (rbtree_is_red(sbl)) {
+				rbtree_black(sbl);
+				rbtree_red(temp->parent);
+				rbtree_right_rotate(root, sentinel, temp->parent);
+				sbl = temp->parent->left;
+			}
+
+			if (rbtree_is_black(sbl->left) && rbtree_is_black(sbl->right)) {
+				rbtree_red(sbl);
+				temp = temp->parent;
+
 			} else {
-				R->Color = BLACK;
-				Node->Parent->Right = R;
-				R->Parent = Node->Parent;
+				if (rbtree_is_black(sbl->left)) {
+					rbtree_black(sbl->right);
+					rbtree_red(sbl);
+					rbtree_left_rotate(root, sentinel, sbl);
+					sbl = temp->parent->left;
+				}
+
+				sbl->color = temp->parent->color;
+				rbtree_black(temp->parent);
+				rbtree_black(sbl->left);
+				rbtree_right_rotate(root, sentinel, temp->parent);
+				temp = *root;
 			}
 		}
-		/* free deleted node */
-		free(Node);
-	} else {
-		FixDoubleBlack(Node, T);
-		if (!Node->Parent) {
-			*T = NULL;
-		} else {
-			L = Node->Left;
-			R = Node->Right;
-			if (OnLeft(Node)) {
-				if (!L) {
-					Node->Parent->Left = R;
-					if (R) R->Parent = Node->Parent;
-				} else {
-					Node->Parent->Left = L;
-					L->Parent = Node->Parent;
-				}
-			} else {
-				if (!R) {
-					Node->Parent->Right = L;
-					if (L) L->Parent = Node->Parent;
-				} else {
-					Node->Parent->Right = R;
-					R->Parent = Node->Parent;
-				}
-			}
-		}
-//		free(Node);
 	}
 
-	if (*T)
-		(*T)->Color = BLACK;
+	rbtree_black(temp);
 }
 
-ElementType Retrive(Position P)
+void inorder(rbtree root, rbtree sentinel)
 {
-	if (!P) {
-		error(0, 0, "P is not valid\n");
-		return -1;
+	if (root != sentinel) {
+		inorder(root->left, sentinel);
+		fprintf(stdout, "%d\n", root->element);
+		inorder(root->right, sentinel);
 	}
-
-	return P->Element;
-}
-
-void InOrder(RBTree T)
-{
-	if (T) {
-		InOrder(T->Left);
-		fprintf(stdout, "\tValue:%d Color:%s\n", T->Element, T->Color ? "BLACK" : "RED");
-		if (T->Parent)
-			fprintf(stdout, "\tParent->Element:%d Parent->Color:%s\n", T->Parent->Element, T->Parent->Color ? "BLACK" : "RED");
-		InOrder(T->Right);
-	}
-}
-
-RBTree BuildTreeForTest(ElementType x, int c, RBTree T)
-{
-	if (!T) {
-		T = malloc(sizeof(*T));
-		if (!T) return NULL;
-		T->Color = c;
-		T->Element = x;
-		T->Left = T->Right = T->Parent = 0;
-	} else {
-		if (x < T->Element) {
-			T->Left = BuildTreeForTest(x, c, T->Left);
-			T->Left->Parent = T;
-		}
-		else if (x > T->Element) {
-			T->Right = BuildTreeForTest(x, c, T->Right);
-			T->Right->Parent = T;
-		}
-	}
-
-	return T;
 }

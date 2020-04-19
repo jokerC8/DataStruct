@@ -1,18 +1,23 @@
 #ifndef __RBTREE_H
 #define __RBTREE_H
 
-typedef int ElementType;
+typedef int element_type;
+struct rbtree_node;
+typedef struct rbtree_node *rbtree;
 
-struct RBTreeNode;
-typedef struct RBTreeNode *RBTree, *Position;
+struct rbtree_node {
+	int color;
+	element_type element;
+	rbtree left;
+	rbtree right;
+	rbtree parent;
+};
 
-Position Find(ElementType x, RBTree T);
-Position FindMin(RBTree T);
-Position FindMax(RBTree T);
-RBTree Insert(ElementType x, RBTree T);
-void Delete(ElementType x, RBTree *T);
-ElementType Retrive(Position P);
-void InOrder(RBTree T);
-RBTree BuildTreeForTest(ElementType x, int c, RBTree T);
-
+rbtree rbtree_min(rbtree node, rbtree sentinel);
+rbtree rbtree_max(rbtree node, rbtree sentinel);
+rbtree rbtree_find(rbtree node, rbtree sentinel, element_type x);
+element_type retrive(struct rbtree_node *node);
+void rbtree_delete(rbtree *root, rbtree sentinel, rbtree node);
+void rbtree_insert(rbtree *root, rbtree sentinel, rbtree node);
+void inorder(rbtree root, rbtree sentinel);
 #endif
