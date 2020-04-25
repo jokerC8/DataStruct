@@ -10,10 +10,9 @@ int main()
 {
 	int i;
 	rbtree root, node;
-
 	root = &sentinel;
 
-	for (i = 0; i < 100000; i++) {
+	for (i = 0; i < 1000000; i++) {
 		node = malloc(sizeof(*node));
 		if (node) {
 			node->element = random() % 0xffffff;
@@ -21,24 +20,12 @@ int main()
 		}
 	}
 
-	//inorder(root, &sentinel);
-
-	rbtree left, right;
-
-	for (; ;) {
-		left = root->left;
-		if (left != &sentinel)
-			rbtree_delete(&root, &sentinel, left);
-		right = root->right;
-
-		if (right != &sentinel)
-			rbtree_delete(&root, &sentinel, right);
-
-		if (root->left == &sentinel && root->right == &sentinel)
-			break;
+	i = 0;
+	while (root != &sentinel) {
+		fprintf(stdout, "delete %d\n", root->element);
+		rbtree_delete(&root, &sentinel, root);
 	}
 
 	inorder(root, &sentinel);
-
 	return 0;
 }

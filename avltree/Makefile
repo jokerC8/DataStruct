@@ -1,4 +1,4 @@
-TARGET := rbtree
+TARGET := avltree
 
 CFLAGS += -g -O0 -Wall -Werror -fPIC
 
