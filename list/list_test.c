@@ -247,26 +247,6 @@ void *wroutine(void *args)
 	}
 }
 
-static void kfifo_test()
-{
-	uint8_t i;
-	pthread_t pids[10];
-
-	struct kfifo *kfifo;
-	pthread_mutex_t lock;
-
-	pthread_mutex_init(&lock, NULL);
-	kfifo = kfifo_alloc(0x100000, &lock);
-	for (i = 0; i < sizeof(pids)/sizeof(pthread_t); i++) {
-		if (i < 5)
-			pthread_create(&pids[i], NULL, rroutine, (void *)kfifo);
-		else
-			pthread_create(&pids[i], NULL, wroutine, (void *)kfifo);
-	}
-	for (i = 0; i < sizeof(pids)/sizeof(pthread_t); i++)
-		pthread_join(pids[i], NULL);
-}
-
 int main(int argc, char *argv[])
 {
     int i;
@@ -288,7 +268,6 @@ int main(int argc, char *argv[])
     putchar('\n');
     printf("index=%d\n", binary_search(arr, sizeof(arr)/sizeof(int), 90));
     printf("index=%d\n", binsearch(arr, 0, sizeof(arr)/sizeof(int) - 1, 902));
-	kfifo_test();
 	getchar();
     return 0;
 }

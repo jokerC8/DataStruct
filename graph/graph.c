@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "queue.h"
+#include "../queue/queue.h"
 #include "graph.h"
 
 #define NotAVertex (-1)
